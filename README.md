@@ -2,6 +2,8 @@
 
 Work in progress.
 
-```from ASpaceAPI import ASpace
+```python
+from ASpaceAPI import ASpace
 aspace = ASpace()
-aspace.get_archival_object(1234)```
+aspace.get_archival_object(1234)
+```
