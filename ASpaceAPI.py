@@ -273,6 +273,7 @@ class ASpace(object):
         digital_object_json["publish"] = publish
         digital_object["notes"] = [{"type": "note", "content": [note_content], "publish": True, "jsonmodel_type":"note_digital_object"}]
         digital_object_json["file_versions"] = [{"file_uri": link, "xlink_show_attribute": "new", "xlink_actuate_attribute": "onRequest"}]
+        return digital_object_json
 
     def post_digital_object(self, digital_object_json):
         uri = self.repository + "/digital_objects"
