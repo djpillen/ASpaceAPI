@@ -29,6 +29,7 @@ class CommunicationError(ArchivesSpaceError):
         self.response = response
         super(CommunicationError, self).__init__(message)
 
+
 class ASpace(object):
     def __init__(self, instance_name=None, repository=2, expiring="true"):
         base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -57,7 +58,8 @@ class ASpace(object):
             else:
                 sys.exit()
         elif instance_name and instance_name in instances:
-            configuration = {key: value for (key, value) in config.items(instance_name)}
+            configuration = {key: value for (
+                key, value) in config.items(instance_name)}
             return configuration
         else:
             instance_mapping = {}
@@ -72,7 +74,8 @@ class ASpace(object):
             option = raw_input("Select an option: ")
             if option.strip() in instance_mapping.keys():
                 instance = instance_mapping[option]
-                configuration = {key: value for (key, value) in config.items(instance)}
+                configuration = {key: value for (
+                    key, value) in config.items(instance)}
                 return configuration
             elif option.lower().strip() == "a":
                 configuration = self._add_instance(config)
@@ -89,7 +92,8 @@ class ASpace(object):
         backend_url = raw_input("Backend URL: ")
         frontend_url = raw_input("Frontend URL: ")
         username = raw_input("Default username: ")
-        store_password = raw_input("Store a password for this instance? (y/n) ")
+        store_password = raw_input(
+            "Store a password for this instance? (y/n) ")
         if store_password == "y":
             password = getpass.getpass("Enter password: ")
         else:
@@ -110,7 +114,7 @@ class ASpace(object):
         if authenticate.get("session", ""):
             self.session = requests.Session()
             token = authenticate["session"]
-            self.session.headers.update({"X-ArchivesSpace-Session":token})
+            self.session.headers.update({"X-ArchivesSpace-Session": token})
         else:
             print "Error logging in:"
             print authenticate
@@ -124,7 +128,8 @@ class ASpace(object):
         try:
             output = response.json()
         except Exception:
-            raise ArchivesSpaceError("ArchivesSpace server responded with status {}, but returned a non-JSON document".format(response.status_code))
+            raise ArchivesSpaceError(
+                "ArchivesSpace server responded with status {}, but returned a non-JSON document".format(response.status_code))
 
         if 'error' in output:
             raise ArchivesSpaceError(output['error'])
@@ -171,7 +176,8 @@ class ASpace(object):
         if aspace_uri == aspace_json["uri"]:
             self.post_aspace_json(aspace_uri, aspace_json, params=params)
         else:
-            raise ArchivesSpaceError("Unable to update object. Supplied URI {} does not match {}".format(aspace_uri, aspace_json["uri"]))
+            raise ArchivesSpaceError("Unable to update object. Supplied URI {} does not match {}".format(
+                aspace_uri, aspace_json["uri"]))
 
     def get_resource(self, resource_id):
         resource_uri = self.repository + "/resources/{}".format(resource_id)
@@ -201,20 +207,25 @@ class ASpace(object):
         return self.get_agent(agent_uri)
 
     def get_digital_object(self, digital_object_id):
-        digital_object_uri = self.repository + "/digital_objects/{}".format(digital_object_id)
+        digital_object_uri = self.repository + \
+            "/digital_objects/{}".format(digital_object_id)
         return self.get_aspace_json(digital_object_uri)
 
     def get_archival_object(self, archival_object_id):
-        archival_object_uri = self.repository + "/archival_objects/{}".format(archival_object_id)
+        archival_object_uri = self.repository + \
+            "/archival_objects/{}".format(archival_object_id)
         return self.get_aspace_json(archival_object_uri)
 
     def get_archival_object_children(self, archival_object_id):
-        uri = self.repository + "/archival_objects/{}/children".format(archival_object_id)
+        uri = self.repository + \
+            "/archival_objects/{}/children".format(archival_object_id)
         return self.get_aspace_json(uri)
 
     def post_archival_object_children(self, children, archival_object_id):
-        uri = self.backend_url + self.repository + "/archival_objects/{}/children".format(archival_object_id)
-        archival_object_children = {"children":children, "jsonmodel_type":"archival_record_children"}
+        uri = self.backend_url + self.repository + \
+            "/archival_objects/{}/children".format(archival_object_id)
+        archival_object_children = {
+            "children": children, "jsonmodel_type": "archival_record_children"}
         response = self._post(uri, data=json.dumps(archival_object_children))
         return response.json()
 
@@ -228,21 +239,24 @@ class ASpace(object):
         if len(resolved_archival_objects) == 1:
             return resolved_archival_objects[0]["ref"]
         else:
-            raise ArchivesSpaceError("Error resolving {}: {} archival_objects returned".format(ref_id, len(resolved_archival_objects)))
+            raise ArchivesSpaceError("Error resolving {}: {} archival_objects returned".format(
+                ref_id, len(resolved_archival_objects)))
 
     def make_resource_link(self, resource_number):
         return "{}/resources/{}".format(self.frontend_url, resource_number)
 
     def transfer_archival_object(self, archival_object_uri, resource_uri):
         uri = "/repositories/2/component_transfers"
-        params = {"target_resource": resource_uri, "component": archival_object_uri}
+        params = {"target_resource": resource_uri,
+                  "component": archival_object_uri}
         response = self.post_aspace_json(uri, params=params)
         event_to_delete = response["event"]
         self.delete_aspace_object(event_to_delete)
         return response
 
     def set_archival_object_parent(self, archival_object_id, parent_id, position=0):
-        uri = "/repositories/2/archival_objects/{}/parent".format(archival_object_id)
+        uri = "/repositories/2/archival_objects/{}/parent".format(
+            archival_object_id)
         params = {"parent": int(parent_id), "position": position}
         response = self.post_aspace_json(uri, params=params)
         return response
@@ -256,7 +270,7 @@ class ASpace(object):
     def make_archival_object_link_from_json(self, archival_object):
         resource_ref = archival_object["resource"]["ref"]
         resource_id = resource_ref.split("/")[-1]
-        archival_object_uri = archival_object["uri"]        
+        archival_object_uri = archival_object["uri"]
         return self.make_archival_object_link(resource_id, archival_object_uri)
 
     def make_archival_object_link(self, resource_number, aspace_uri):
@@ -271,8 +285,10 @@ class ASpace(object):
         else:
             digital_object_json["digital_object_id"] = str(uuid.uuid4())
         digital_object_json["publish"] = publish
-        digital_object["notes"] = [{"type": "note", "content": [note_content], "publish": True, "jsonmodel_type":"note_digital_object"}]
-        digital_object_json["file_versions"] = [{"file_uri": link, "xlink_show_attribute": "new", "xlink_actuate_attribute": "onRequest"}]
+        digital_object_json["notes"] = [{"type": "note", "content": [
+            note_content], "publish": True, "jsonmodel_type":"note_digital_object"}]
+        digital_object_json["file_versions"] = [
+            {"file_uri": link, "xlink_show_attribute": "new", "xlink_actuate_attribute": "onRequest"}]
         return digital_object_json
 
     def post_digital_object(self, digital_object_json):
@@ -280,7 +296,7 @@ class ASpace(object):
         return self.post_aspace_json(uri, data=digital_object_json)
 
     def make_digital_object_instance(self, digital_object_uri):
-        return {'instance_type':'digital_object', 'digital_object':{'ref':digital_object_uri}}
+        return {'instance_type': 'digital_object', 'digital_object': {'ref': digital_object_uri}}
 
     def make_container_instance(self, top_container_uri):
         pass
@@ -289,11 +305,14 @@ class ASpace(object):
         pass
 
     def get_export_metadata(self, resource_number):
-        uri = self.repository + "/bhl_resource_descriptions/{}.xml/metadata".format(resource_number)
+        uri = self.repository + \
+            "/bhl_resource_descriptions/{}.xml/metadata".format(
+                resource_number)
         return self.get_aspace_json(uri)
 
     def convert_ead_to_aspace_json(self, ead_filepath):
-        self.session.headers.update({"Content-type":"text/html; charset=utf-8"})
+        self.session.headers.update(
+            {"Content-type": "text/html; charset=utf-8"})
         uri = self.backend_url + "/plugins/jsonmodel_from_format/resource/ead"
         with open(ead_filepath, "rb") as f:
             response = self.session.post(uri, data=f).json()
@@ -306,12 +325,13 @@ class ASpace(object):
             resource_description_uri = "/resource_descriptions/"
         else:
             resource_description_uri = "/bhl_resource_descriptions/"
-        uri = self.backend_url + self.repository + resource_description_uri + "{}.xml".format(resource_number)
+        uri = self.backend_url + self.repository + \
+            resource_description_uri + "{}.xml".format(resource_number)
         params = {
-                "include_unpublished": include_unpublished,
-                "include_daos": include_daos,
-                "numbered_cs": numbered_cs
-            }
+            "include_unpublished": include_unpublished,
+            "include_daos": include_daos,
+            "numbered_cs": numbered_cs
+        }
         ead = self.session.get(uri, params=params)
         return ead
 
@@ -345,25 +365,30 @@ class ASpace(object):
 
     def post_top_container(self, container_type, indicator):
         uri = self.backend_url + self.repository + "/top_containers"
-        top_container = {"indicator": indicator, "type": container_type, "jsonmodel_type": "top_container"}
+        top_container = {"indicator": indicator,
+                         "type": container_type, "jsonmodel_type": "top_container"}
         response = self._post(uri, data=json.dumps(top_container))
         return response.json()["uri"]
 
     def get_metadata_for_container(self, top_container_id):
-        uri = self.repository + "/metadata_for_container/{}".format(top_container_id)
+        uri = self.repository + \
+            "/metadata_for_container/{}".format(top_container_id)
         response = self.get_aspace_json(uri)
         return response
 
     def merge_top_containers(self, source_id, target_id):
         # replace all references to source with references to target and delete source
-        archival_objects = self.get_metadata_for_container(source_id)["archival_objects"]
+        archival_objects = self.get_metadata_for_container(source_id)[
+            "archival_objects"]
         source_uri = self.repository + "/top_containers/{}".format(source_id)
         target_uri = self.repository + "/top_containers/{}".format(target_id)
-        archival_object_uris = [archival_object["archival_object_uri"] for archival_object in archival_objects]
+        archival_object_uris = [archival_object["archival_object_uri"]
+                                for archival_object in archival_objects]
         for archival_object_uri in archival_object_uris:
             archival_object = self.get_aspace_json(archival_object_uri)
             instances = archival_object["instances"]
-            matching_instances = [instance for instance in instances if instance["sub_container"]["top_container"]["ref"] == source_uri]
+            matching_instances = [
+                instance for instance in instances if instance["sub_container"]["top_container"]["ref"] == source_uri]
             for matching_instance in matching_instances:
                 matching_instance["sub_container"]["top_container"]["ref"] = target_uri
             self.update_aspace_object(archival_object_uri, archival_object)
@@ -371,7 +396,8 @@ class ASpace(object):
 
     def get_resource_tree(self, resource_number):
         # /repositories/:repo_id/resources/:id/tree
-        uri = self.backend_url + self.repository + "/resources/{}/tree".format(resource_number)
+        uri = self.backend_url + self.repository + \
+            "/resources/{}/tree".format(resource_number)
         response = self._get(uri)
         return response.json()
 
@@ -386,14 +412,16 @@ class ASpace(object):
 
     def add_enumeration_values(self, enumeration_id, new_enumeration_values):
         enumeration = self.get_enumeration(enumeration_id)
-        values_to_add = [value for value in new_enumeration_values if value not in enumeration["values"]]
+        values_to_add = [
+            value for value in new_enumeration_values if value not in enumeration["values"]]
         if values_to_add:
             enumeration["values"].extend(values_to_add)
             self.update_enumeration(enumeration_id, enumeration)
 
     def remove_resource_associations(self, resource_number):
         resource_tree = self.get_resource_tree(resource_number)
-        children_with_instances = find_children_with_instances(resource_tree["children"])
+        children_with_instances = find_children_with_instances(
+            resource_tree["children"])
         instance_uris = []
         for child_uri in children_with_instances:
             instance_uris.extend(self.find_instance_uris(child_uri))
@@ -402,7 +430,8 @@ class ASpace(object):
 
     def get_resource_children_with_instances(self, resource_number, instance_type=False):
         resource_tree = self.get_resource_tree(resource_number)
-        children_with_instances = find_children_with_instances(resource_tree["children"], instance_type=instance_type)
+        children_with_instances = find_children_with_instances(
+            resource_tree["children"], instance_type=instance_type)
         return children_with_instances
 
     def delete_single_resource_instances(self, instance_uri):
@@ -420,12 +449,14 @@ class ASpace(object):
         aspace_json = self.get_aspace_json(aspace_uri)
         instances = aspace_json["instances"]
         if instance_type:
-            instances = [instance for instance in instances if instance["instance_type"] == instance_type]
+            instances = [
+                instance for instance in instances if instance["instance_type"] == instance_type]
         for instance in instances:
             if instance["instance_type"] == "digital_object":
                 instance_uris.append(instance["digital_object"]["ref"])
             else:
-                instance_uris.append(instance["sub_container"]["top_container"]["ref"])
+                instance_uris.append(
+                    instance["sub_container"]["top_container"]["ref"])
         return instance_uris
 
     def build_hierarchy(self, aspace_json, delimiter=">"):
@@ -451,7 +482,8 @@ class ASpace(object):
             if add_parent_title:
                 parent_ref = aspace_json["parent"]["ref"]
                 parent_json = self.get_aspace_json(parent_ref)
-                parent_title = self.sanitize_title(parent_json["display_string"])
+                parent_title = self.sanitize_title(
+                    parent_json["display_string"])
                 return parent_title + ", " + self.format_dates(aspace_json)
             else:
                 return self.format_dates(aspace_json)
@@ -462,7 +494,6 @@ class ASpace(object):
             aspace_json = self.get_aspace_json(parent_ref)
 
         return self.format_dates(aspace_json)
-
 
     def format_dates(self, aspace_json):
         if aspace_json.get("dates"):
@@ -489,17 +520,19 @@ class ASpace(object):
             return ""
 
     def sanitize_title(self, title):
-        return re.sub(r"<.*?>","",title).strip()
+        return re.sub(r"<.*?>", "", title).strip()
 
     def find_notes_by_type(self, aspace_json, note_type):
-        matching_notes = [note for note in aspace_json["notes"] if note.get("type") == note_type]
+        matching_notes = [note for note in aspace_json["notes"]
+                          if note.get("type") == note_type]
         if matching_notes:
             return matching_notes
         else:
             return ""
 
     def find_note_by_type(self, aspace_json, note_type):
-        matching_notes = [note for note in aspace_json["notes"] if note.get("type") == note_type]
+        matching_notes = [note for note in aspace_json["notes"]
+                          if note.get("type") == note_type]
         if matching_notes:
             return self.format_note(matching_notes[0])
         else:
@@ -513,12 +546,14 @@ class ASpace(object):
 
     def get_resource_archival_object_uris(self, resource_number):
         resource_tree = self.get_resource_tree(resource_number)
-        archival_object_uris = extract_archival_object_uris_from_children(resource_tree["children"])
+        archival_object_uris = extract_archival_object_uris_from_children(
+            resource_tree["children"])
         return archival_object_uris
 
     def unpublish_expired_restrictions_for_resource(self, resource_number):
         today = datetime.today().strftime("%Y-%m-%d")
-        archival_object_uris = self.get_resource_archival_object_uris(resource_number)
+        archival_object_uris = self.get_resource_archival_object_uris(
+            resource_number)
         unpublished_log = []
         for archival_object_uri in archival_object_uris:
             update_archival_object = False
@@ -526,20 +561,23 @@ class ASpace(object):
             for note in archival_object["notes"]:
                 if note["type"] == "accessrestrict" and note["publish"]:
                     accessrestrict = self.format_note(note)
-                    accessrestrict_xml = etree.fromstring("<accessrestrict>{}</accessrestrict>".format(accessrestrict))
+                    accessrestrict_xml = etree.fromstring(
+                        "<accessrestrict>{}</accessrestrict>".format(accessrestrict))
                     accessrestrict_date = accessrestrict_xml.xpath("./date")
                     if accessrestrict_date and (accessrestrict_date[0].attrib["normal"] < today):
                         note["publish"] = False
                         update_archival_object = True
-                        unpublished_log.append({"uri": archival_object_uri, "title": archival_object["display_string"], "restriction": accessrestrict})
+                        unpublished_log.append(
+                            {"uri": archival_object_uri, "title": archival_object["display_string"], "restriction": accessrestrict})
             if update_archival_object:
-                print self.session.post(self.backend_url+archival_object_uri, json=archival_object).json()
+                print self.session.post(self.backend_url + archival_object_uri, json=archival_object).json()
         return unpublished_log
 
     def unpublish_restrictions_by_text(self, resource_number, restriction_text=False):
         if not restriction_text:
             return "No restriction text provided"
-        archival_object_uris = self.get_resource_archival_object_uris(resource_number)
+        archival_object_uris = self.get_resource_archival_object_uris(
+            resource_number)
         unpublished_log = []
         for archival_object_uri in archival_object_uris:
             update_archival_object = False
@@ -550,33 +588,36 @@ class ASpace(object):
                     if accessrestrict == restriction_text:
                         note["publish"] = False
                         update_archival_object = True
-                        unpublished_log.append({"uri": archival_object_uri, "title": archival_object["display_string"], "restriction": accessrestrict})
+                        unpublished_log.append(
+                            {"uri": archival_object_uri, "title": archival_object["display_string"], "restriction": accessrestrict})
             if update_archival_object:
-                print self.session.post(self.backend_url+archival_object_uri, json=archival_object).json()
+                print self.session.post(self.backend_url + archival_object_uri, json=archival_object).json()
         return unpublished_log
 
- 
     def parse_extents(self, aspace_json):
         parsed_extents = []
         if aspace_json.get("extents"):
             for extent in aspace_json["extents"]:
-                parsed_extent = "{} {}".format(extent["number"], extent["extent_type"])
+                parsed_extent = "{} {}".format(
+                    extent["number"], extent["extent_type"])
                 container_summary = extent.get("container_summary")
                 physical_details = extent.get("physical_details")
                 dimensions = extent.get("dimensions")
-                parenthetical_parts = [attribute for attribute in [container_summary, physical_details, dimensions] if attribute]
+                parenthetical_parts = [attribute for attribute in [
+                    container_summary, physical_details, dimensions] if attribute]
                 if parenthetical_parts:
                     parenthetical = "; ".join(parenthetical_parts)
-                    parsed_extent = "{} ({})".format(parsed_extent, parenthetical)
+                    parsed_extent = "{} ({})".format(
+                        parsed_extent, parenthetical)
                 parsed_extents.append(parsed_extent)
         if parsed_extents:
             return "; ".join(parsed_extents)
         else:
             return ""
 
-
     def get_resource_creator(self, resource_json):
-        creators = [agent["ref"] for agent in resource_json["linked_agents"] if agent["role"] == "creator"]
+        creators = [agent["ref"]
+                    for agent in resource_json["linked_agents"] if agent["role"] == "creator"]
         if creators:
             creator_uri = creators[0]
             creator_name = self.get_aspace_json(creator_uri)["title"]
@@ -607,16 +648,21 @@ class ASpace(object):
         return subject_or_agent
 
     def get_resource_subjects(self, resource_json, ignore_types=[]):
-        subject_uris = [subject["ref"] for subject in resource_json["subjects"]]
-        subjects_json = [self.get_aspace_json(subject_uri) for subject_uri in subject_uris]
+        subject_uris = [subject["ref"]
+                        for subject in resource_json["subjects"]]
+        subjects_json = [self.get_aspace_json(
+            subject_uri) for subject_uri in subject_uris]
         return [self.verify_punctuation(subject["title"]) for subject in subjects_json if subject["terms"][0]["term_type"] not in ignore_types]
+
 
 def extract_archival_object_uris_from_children(children, archival_object_uris=[]):
     for child in children:
         archival_object_uris.append(child["record_uri"])
         if child["has_children"]:
-            extract_archival_object_uris_from_children(child["children"], archival_object_uris=archival_object_uris)
+            extract_archival_object_uris_from_children(
+                child["children"], archival_object_uris=archival_object_uris)
     return archival_object_uris
+
 
 def find_children_with_instances(children, children_with_instances=[], instance_type=False):
     for child in children:
@@ -627,6 +673,7 @@ def find_children_with_instances(children, children_with_instances=[], instance_
                 elif not instance_type:
                     children_with_instances.append(child["record_uri"])
         if child["has_children"]:
-            find_children_with_instances(child["children"], children_with_instances=children_with_instances)
+            find_children_with_instances(
+                child["children"], children_with_instances=children_with_instances)
 
     return children_with_instances
