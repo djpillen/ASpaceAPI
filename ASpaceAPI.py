@@ -174,10 +174,15 @@ class ASpace(object):
 
     def update_aspace_object(self, aspace_uri, aspace_json, params={}):
         if aspace_uri == aspace_json["uri"]:
-            self.post_aspace_json(aspace_uri, aspace_json, params=params)
+            return self.post_aspace_json(aspace_uri, aspace_json, params=params)
         else:
             raise ArchivesSpaceError("Unable to update object. Supplied URI {} does not match {}".format(
                 aspace_uri, aspace_json["uri"]))
+
+    def list_resources(self):
+        uri = self.repository + "/resources"
+        params = {"all_ids": True}
+        return self.get_aspace_json(uri, params=params)
 
     def get_resource(self, resource_id):
         resource_uri = self.repository + "/resources/{}".format(resource_id)
@@ -228,19 +233,24 @@ class ASpace(object):
             "children": children, "jsonmodel_type": "archival_record_children"}
         response = self._post(uri, data=json.dumps(archival_object_children))
         return response.json()
-
-    def resolve_refid(self, ref_id):
-        if ref_id.startswith("aspace_"):
-            ref_id = ref_id.replace("aspace_", "")
+    
+    def find_by_id(self, id_type, id_value):
         id_lookup_uri = self.repository + "/find_by_id/archival_objects"
-        params = {"ref_id[]": ref_id}
+        params = {"{}[]".format(id_type): id_value}
         id_lookup = self.get_aspace_json(id_lookup_uri, params=params)
         resolved_archival_objects = id_lookup["archival_objects"]
         if len(resolved_archival_objects) == 1:
             return resolved_archival_objects[0]["ref"]
         else:
-            raise ArchivesSpaceError("Error resolving {}: {} archival_objects returned".format(
-                ref_id, len(resolved_archival_objects)))
+            raise ArchivesSpaceError("Error resolve {} {}: {} archival objects returns".format(id_type, id_value, len(resolved_archival_objects)))
+    
+    def resolve_component_id(self, component_id):
+        return self.find_by_id("component_id", component_id)
+
+    def resolve_refid(self, ref_id):
+        if ref_id.startswith("aspace_"):
+            ref_id = ref_id.replace("aspace_", "")
+        return self.find_by_id("ref_id", ref_id)
 
     def make_resource_link(self, resource_number):
         return "{}/resources/{}".format(self.frontend_url, resource_number)
@@ -363,10 +373,12 @@ class ASpace(object):
         uri = self.repository + "/top_containers/{}".format(container_id)
         self.post_aspace_json(uri, container_json)
 
-    def post_top_container(self, container_type, indicator):
+    def post_top_container(self, container_type, indicator, barcode=False):
         uri = self.backend_url + self.repository + "/top_containers"
         top_container = {"indicator": indicator,
                          "type": container_type, "jsonmodel_type": "top_container"}
+        if barcode:
+            top_container["barcode"] = barcode
         response = self._post(uri, data=json.dumps(top_container))
         return response.json()["uri"]
 
@@ -614,6 +626,35 @@ class ASpace(object):
             return "; ".join(parsed_extents)
         else:
             return ""
+    
+    def get_collection_id(self, resource_json):
+        ead_id = resource_json.get("ead_id")
+        identifier = resource_json["id_0"].strip()
+        collection_id_regex = re.compile(r"^[\d\.]+")
+        if ead_id:
+            collection_id = "-".join(ead_id.split("-")[2:])
+        elif collection_id_regex.match(identifier):
+            collection_id = re.findall(r"^[\d\.]+", identifier)[0]
+        else:
+            collection_id = ""
+        return collection_id
+
+    def parse_link_from_digital_object(self, digital_object):
+        if digital_object.get("file_versions"):
+            return digital_object["file_versions"][0]["file_uri"]
+        else:
+            return digital_object["digital_object_id"]
+    
+    def get_digital_object_instance_links(self, aspace_json, match_pattern=False):
+        links = []
+        digital_object_instances = [instance for instance in aspace_json["instances"] if instance["instance_type"] == "digital_object"]
+        for digital_object_instance in digital_object_instances:
+            digital_object_uri = digital_object_instance["digital_object"]["ref"]
+            digital_object = self.get_aspace_json(digital_object_uri)
+            links.append(self.parse_link_from_digital_object(digital_object))
+        if match_pattern:
+            links = [link for link in links if match_pattern in link]
+        return links
 
     def get_resource_creator(self, resource_json):
         creators = [agent["ref"]
