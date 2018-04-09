@@ -2,8 +2,14 @@
 
 Work in progress.
 
+## Installation
+
+`pip install git+https://github.com/djpillen/ASpaceAPI.git`
+
+## Use
+
 ```python
-from ASpaceAPI import ASpace
-aspace = ASpace()
+from aspaceapi import ASpaceAPIClient
+aspace = ASpaceAPIClient()
 aspace.get_archival_object(1234)
 ```
