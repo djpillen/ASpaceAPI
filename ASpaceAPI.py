@@ -1,4 +1,3 @@
-import ConfigParser
 from datetime import datetime
 import getpass
 import requests
@@ -8,6 +7,15 @@ import os
 import re
 import sys
 import uuid
+
+if sys.version_info[:2] <= (2, 7):
+    # Python 2
+    get_input = raw_input
+    import ConfigParser as configparser
+else:
+    # Python 3
+    get_input = input
+    import configparser
 
 __all__ = ["ASpace", "find_children_with_instances"]
 
@@ -46,12 +54,12 @@ class ASpace(object):
         self._login(password)
 
     def _load_config(self, instance_name):
-        config = ConfigParser.RawConfigParser()
+        config = configparser.RawConfigParser()
         config.read(self.config_file)
         instances = config.sections()
         if len(instances) == 0:
-            print "No ArchivesSpace instances configured. Configure an instance? (y/n)"
-            configure = raw_input(": ")
+            print("No ArchivesSpace instances configured. Configure an instance? (y/n)")
+            configure = get_input(": ")
             if configure.lower().strip() == "y" or configure.lower().strip() == "yes":
                 configuration = self._add_instance(config)
                 return configuration
@@ -64,14 +72,14 @@ class ASpace(object):
         else:
             instance_mapping = {}
             instance_number = 0
-            print "*** CONFIGURED INSTANCES ***"
+            print("*** CONFIGURED INSTANCES ***")
             for instance in instances:
                 instance_number += 1
                 instance_mapping[str(instance_number)] = instance
                 instance_url = config.get(instance, "backend_url")
-                print "{} - {} [{}]".format(instance_number, instance, instance_url)
-            print "A - Add Instance"
-            option = raw_input("Select an option: ")
+                print("{} - {} [{}]".format(instance_number, instance, instance_url))
+            print("A - Add Instance")
+            option = get_input("Select an option: ")
             if option.strip() in instance_mapping.keys():
                 instance = instance_mapping[option]
                 configuration = {key: value for (
@@ -88,11 +96,11 @@ class ASpace(object):
             config.write(f)
 
     def _add_instance(self, config):
-        instance_name = raw_input("Instance name: ")
-        backend_url = raw_input("Backend URL: ")
-        frontend_url = raw_input("Frontend URL: ")
-        username = raw_input("Default username: ")
-        store_password = raw_input(
+        instance_name = get_input("Instance name: ")
+        backend_url = get_input("Backend URL: ")
+        frontend_url = get_input("Frontend URL: ")
+        username = get_input("Default username: ")
+        store_password = get_input(
             "Store a password for this instance? (y/n) ")
         if store_password == "y":
             password = getpass.getpass("Enter password: ")
@@ -116,8 +124,8 @@ class ASpace(object):
             token = authenticate["session"]
             self.session.headers.update({"X-ArchivesSpace-Session": token})
         else:
-            print "Error logging in:"
-            print authenticate
+            print("Error logging in:")
+            print(authenticate)
             sys.exit()
 
     def _request(self, method, url, params, expected_response, data=None):
@@ -582,7 +590,7 @@ class ASpace(object):
                         unpublished_log.append(
                             {"uri": archival_object_uri, "title": archival_object["display_string"], "restriction": accessrestrict})
             if update_archival_object:
-                print self.session.post(self.backend_url + archival_object_uri, json=archival_object).json()
+                self.session.post(self.backend_url + archival_object_uri, json=archival_object).json()
         return unpublished_log
 
     def unpublish_restrictions_by_text(self, resource_number, restriction_text=False):
@@ -603,7 +611,7 @@ class ASpace(object):
                         unpublished_log.append(
                             {"uri": archival_object_uri, "title": archival_object["display_string"], "restriction": accessrestrict})
             if update_archival_object:
-                print self.session.post(self.backend_url + archival_object_uri, json=archival_object).json()
+                self.session.post(self.backend_url + archival_object_uri, json=archival_object).json()
         return unpublished_log
 
     def parse_extents(self, aspace_json):
