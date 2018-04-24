@@ -238,17 +238,17 @@ class ASpaceAPIClient(object):
             "children": children, "jsonmodel_type": "archival_record_children"}
         response = self._post(uri, data=json.dumps(archival_object_children))
         return response.json()
-    
+
     def find_by_id(self, id_type, id_value):
         id_lookup_uri = self.repository + "/find_by_id/archival_objects"
         params = {"{}[]".format(id_type): id_value}
         id_lookup = self.get_aspace_json(id_lookup_uri, params=params)
         resolved_archival_objects = id_lookup["archival_objects"]
         if len(resolved_archival_objects) == 1:
-            return resolved_archival_objects[0]["ref"]
+            return {"success": resolved_archival_objects[0]["ref"]}
         else:
-            raise ArchivesSpaceError("Error resolve {} {}: {} archival objects returns".format(id_type, id_value, len(resolved_archival_objects)))
-    
+            return {"error": "Error resolving {} {}: {} archival objects returned".format(id_type, id_value, len(resolved_archival_objects))}
+
     def resolve_component_id(self, component_id):
         return self.find_by_id("component_id", component_id)
 
