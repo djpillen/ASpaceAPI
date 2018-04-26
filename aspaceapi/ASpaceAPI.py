@@ -125,13 +125,13 @@ class ASpaceAPIClient(object):
             print(authenticate)
             sys.exit()
 
-    def _request(self, method, url, params, expected_response, data=None, response_format=json):
+    def _request(self, method, url, params, expected_response, data=None):
         response = method(url, params=params, data=data)
         if response.status_code != expected_response:
             raise CommunicationError(response.status_code, response)
 
         try:
-            response.response_format()
+            response.json()
         except Exception:
             raise ArchivesSpaceError(
                 "ArchivesSpace server responded with status {}, but returned a non-JSON document".format(response.status_code))
