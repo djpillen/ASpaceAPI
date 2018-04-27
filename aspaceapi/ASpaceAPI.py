@@ -658,20 +658,27 @@ class ASpaceAPIClient(object):
             links = [link for link in links if match_pattern in link]
         return links
 
-    def get_resource_creator(self, resource_json):
-        creators = [agent["ref"]
-                    for agent in resource_json["linked_agents"] if agent["role"] == "creator"]
-        if creators:
-            creator_uri = creators[0]
-            creator_name = self.get_aspace_json(creator_uri)["title"]
-            if not (creator_name.endswith(".") or creator_name.endswith(")") or creator_name.endswith("-")):
-                creator_name += "."
-            return creator_name
+    def get_agents_by_role(self, aspace_json, role):
+        agents = [agent["ref"] for agent in aspace_json["linked_agents"] if agent["role"] == role]
+        return agents
+
+    def get_first_agent_by_role(self, aspace_json, role):
+        agents = self.get_agents_by_role(aspace_json, role)
+        if agents:
+            agent_uri = agents[0]
+            agent_name = self.get_aspace_json(agent_uri)["title"]
+            return self.verify_punctuation(agent_name)
         else:
             return ""
 
-    def get_resource_agents(self, resource_json):
-        linked_agents = [agent for agent in resource_json["linked_agents"]]
+    def get_accession_source(self, accession_json):
+        return self.get_first_agent_by_role(accession_json, "source")
+
+    def get_resource_creator(self, resource_json):
+        return self.get_first_agent_by_role(resource_json, "creator")
+
+    def get_linked_agents(self, aspace_json):
+        linked_agents = [agent for agent in aspace_json["linked_agents"]]
         return [self.construct_agent_name(linked_agent) for linked_agent in linked_agents]
 
     def construct_agent_name(self, linked_agent):
@@ -690,9 +697,8 @@ class ASpaceAPIClient(object):
             subject_or_agent += "."
         return subject_or_agent
 
-    def get_resource_subjects(self, resource_json, ignore_types=[]):
-        subject_uris = [subject["ref"]
-                        for subject in resource_json["subjects"]]
+    def get_linked_subjects(self, aspace_json, ignore_types=[]):
+        subject_uris = [subject["ref"] for subject in aspace_json["subjects"]]
         subjects_json = [self.get_aspace_json(
             subject_uri) for subject_uri in subject_uris]
         return [self.verify_punctuation(subject["title"]) for subject in subjects_json if subject["terms"][0]["term_type"] not in ignore_types]
