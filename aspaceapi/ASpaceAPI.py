@@ -236,6 +236,15 @@ class ASpaceAPIClient(object):
         response = self._post(uri, data=json.dumps(archival_object_children))
         return response.json()
 
+    def get_bhl_classifications(self, aspace_json):
+        classifications = []
+        classification_fields = ["enum_1", "enum_2", "enum_3"]
+        user_defined_fields = aspace_json["user_defined"]
+        for classification_field in classification_fields:
+            if user_defined_fields.get(classification_field):
+                classifications.append(user_defined_fields[classification_field])
+        return classifications
+
     def find_by_id(self, id_type, id_value):
         id_lookup_uri = self.repository + "/find_by_id/archival_objects"
         params = {"{}[]".format(id_type): id_value}
