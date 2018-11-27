@@ -725,13 +725,12 @@ def extract_archival_object_uris_from_children(children, archival_object_uris=[]
 def find_children_with_instances(children, children_with_instances=[], instance_type=False):
     for child in children:
         if child["instance_types"]:
-            if child["instance_types"]:
-                if instance_type and instance_type in child["instance_types"]:
-                    children_with_instances.append(child["record_uri"])
-                elif not instance_type:
-                    children_with_instances.append(child["record_uri"])
+            if instance_type and instance_type in child["instance_types"]:
+                children_with_instances.append(child["record_uri"])
+            elif not instance_type:
+                children_with_instances.append(child["record_uri"])
         if child["has_children"]:
             find_children_with_instances(
-                child["children"], children_with_instances=children_with_instances)
+                child["children"], children_with_instances=children_with_instances, instance_type=instance_type)
 
     return children_with_instances
